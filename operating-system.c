@@ -14,25 +14,6 @@
 typedef void (*sighandler_t)(int);
 char c = '\0';
 
-void writeEnvVar(const char* cwd){
-	FILE *ptr_file;
-	char buf[1000];
-
-	char str[1024];
-	strcpy(str, cwd);
-	strcat(str, "/.profile");
-
-	ptr_file =fopen(str,"r+");
-	if (!ptr_file){
-		perror("Error");
-		// return 1;
-	}
-	while (fgets(buf,1000, ptr_file)!=NULL)
-		printf("%s",buf);
-	printf("\n");
-	fclose(ptr_file);
-}
-
 const char *getPWD(){
 	static char cwd[1024];
 	if (getcwd(cwd, sizeof(cwd)) != NULL){
@@ -44,18 +25,26 @@ const char *getPWD(){
 }
 
 void createProfile(const char* cwd){
-	char *home = "HOME=/home/os";
-	char *path = "PATH=/bin:/usr/bin:/usr/local/bin";
+	char *home = "HOME=/home/os\n";
+	char *path = "PATH=/bin:/usr/bin:/usr/local/bin\n";
 
 	char str[1024];
 	strcpy(str, cwd);
 	strcat(str, "/.profile");
 	
-	if( access( fname, F_OK ) != -1 ) {
-		
+	FILE *ptr_file;
+	char buf[1000];
+
+	if( access(str, F_OK ) != -1 ) {
+		ptr_file =fopen(str,"r+");
 	} else {
-		// file doesn't exist
+		ptr_file =fopen(str,"w+");
+		fputs(home, ptr_file);
+		fputs(path, ptr_file);
 	}
+	// while (fgets(buf,1000, ptr_file)!=NULL)
+	// 		printf("%s",buf);
+	fclose(ptr_file);
 }
 
 int main(int argc, char *argv[], char *envp[])
@@ -69,6 +58,7 @@ int main(int argc, char *argv[], char *envp[])
 			printf("%s\n", startupSign);
 	}
 	printf("\n");
-	writeEnvVar(startupSign);
+	// writeEnvVar(startupSign);
+	createProfile(startupSign);
 	return 0;
 }
