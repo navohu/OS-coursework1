@@ -15,10 +15,6 @@
 #include <fcntl.h> // for open
 #include "operating-system.h"
 
-extern int errno;
-static char *my_argv[100], *my_envp[100];
-static char *search_path[10];
-
 /*
 	This function matches strings with regular expressions and is
 	used when checking that PATH and HOME are assigned to something.
@@ -93,11 +89,27 @@ FILE *readProfile(){
 	return 0;
 }
 
+void getArguments(char *tmp){
+	char **my_argv = (char**)calloc(1024, sizeof(char*));
+	char *token;
+	int index = 0;
+
+	token = strtok(tmp, " ");
+	while(token != NULL){
+		for(int j = 0; j < sizeof(token); j++){
+			my_argv[index] = (char*)calloc(1024, sizeof(char));
+			my_argv[index][j] = token[j];
+			printf("%c", my_argv[index][j]);
+		}
+		token = strtok(NULL, " ");
+		index++;
+	}
+}
+
 //Checks the contents of .profile
-void checkProfile(const char* cwd){
+void checkProfile(){
 	FILE *ptr_file = readProfile();
 	char *path = getPATH(ptr_file);
-	printf("%s\n", path);
 	fclose(ptr_file);
 }
 
@@ -112,43 +124,26 @@ int main(int argc, char *argv[], char *envp[])
 	signal(SIGINT, SIG_IGN);
 	printf("%s> ", startupSign);
 
-	// while(c != EOF) {
-	// 	c = getchar();
-	// 	switch(c){
-	// 		case '\n':
-	// 			if(tmp[0] == '\0'){
-	// 				printf("\n");
-	// 			} else {
-	// 				fill_argv(tmp);
-	// 				strncpy(cmd, my_argv[0], strlen(my_argv[0]));
-	// 				strncat(cmd, "\0", 1);
-	// 				if(index(cmd, '/') == NULL) {
-	// 					if(attach_path(cmd) == 0) {
-	// 						call_execve(cmd);
-	// 					} else {
-	// 						printf("%s: command not found\n", cmd);
-	// 					}
-	// 				} else {
-	// 					if((fd = open(cmd, O_RDONLY)) > 0) {
-	// 						close(fd);
-	// 						call_execve(cmd);
-	// 					} else {
-	// 						printf("%s: command not found\n", cmd);
-	// 					}
-	// 				}
-	// 				free_argv();
-	// 				bzero(cmd, 100);
-	// 			}
-	// 			bzero(tmp, 100);
-	// 			break;
-	// 		default: strncat(tmp, &c, 1);
-	// 			 break;
-	// 	}
-	// 	if(c == '\n')
-	// 		printf("%s>\n", startupSign);
-	// }
+	while(c != EOF) {
+		c = getchar();
+		tmp[i] = c;
+
+		if(c == '\n'){
+			tmp[i] = '\0';
+			if(tmp[0] == '\0'){
+				printf("%s>", startupSign);
+			}
+			else{
+				getArguments(tmp);
+				printf("%s>", startupSign);
+				i = 0;
+			}
+		} else {
+			i++;
+		}
+	}
 	printf("\n");
 	// writeEnvVar(startupSign);
-	checkProfile(startupSign);
+	checkProfile();
 	return 0;
 }
