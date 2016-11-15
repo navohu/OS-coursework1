@@ -6,7 +6,7 @@
 //  Copyright © 2016 Nathalie von Huth. All rights reserved.
 //
 
-
+#include <dirent.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -89,37 +89,79 @@ FILE *readProfile(){
 	return 0;
 }
 
-void getArguments(char *tmp){
+char **getArguments(char *tmp){
 	char **my_argv = (char**)calloc(1024, sizeof(char*));
 	char *token;
 	int index = 0;
 
 	token = strtok(tmp, " ");
 	while(token != NULL){
-		for(int j = 0; j < sizeof(token); j++){
-			my_argv[index] = (char*)calloc(1024, sizeof(char));
-			my_argv[index][j] = token[j];
-			printf("%c", my_argv[index][j]);
-		}
+		my_argv[index] = (char*)malloc(sizeof(char) * 100);
+		my_argv[index] = token;
 		token = strtok(NULL, " ");
 		index++;
+	}
+	return my_argv;
+}
+
+char **tokenizePath(char *path){
+	char **tokens = (char**)malloc(sizeof(char*) * 1024);
+	char *token;
+	int index;
+	token = strtok(path, ":");
+
+	while(token != NULL){
+		tokens[index] = (char*)malloc(sizeof(char) * 1024);
+		tokens[index] = token;
+		token = strtok(NULL, ":");
+		index++;
+	}
+	return tokens;
+}
+
+void searchProgram(char **path, char **my_argv){
+	DIR *open;
+	struct dirent *read;
+	int index = 0;
+	while(path[index] != NULL){
+		open = opendir(path[index]);
+
+		if(open == NULL){
+			printf("Can't find directory: %s", path[index]);
+			perror("");
+			break;
+		}
+		while(open){
+			if((read = readdir(open)) != NULL){
+				if (strcmp(read->d_name, my_argv[0]) == 0) {
+					closedir(open);
+					printf("%s is found\n", my_argv[0]);
+					break;
+				}
+			} else {
+				closedir(open);
+				printf("%s is NOT found\n", my_argv[0]);
+				break;
+			}
+		}
 	}
 }
 
 //Checks the contents of .profile
-void checkProfile(){
+char *returnPATH(){
 	FILE *ptr_file = readProfile();
 	char *path = getPATH(ptr_file);
 	fclose(ptr_file);
+	return path;
 }
 
 int main(int argc, char *argv[], char *envp[])
 {
 	char c;
-	int i, fd;
+	int i;
 	const char* startupSign  = getCWD();
 	char *tmp = (char *)malloc(sizeof(char) * 100);
-	char *cmd = (char *)malloc(sizeof(char) * 100);
+	char **my_argv;
 	
 	signal(SIGINT, SIG_IGN);
 	printf("%s> ", startupSign);
@@ -134,7 +176,11 @@ int main(int argc, char *argv[], char *envp[])
 				printf("%s>", startupSign);
 			}
 			else{
-				getArguments(tmp);
+				my_argv = getArguments(tmp);
+				char *path = returnPATH();
+				char **tokenizedPath = tokenizePath(path);
+				printf("%s\n", tokenizedPath[0]);
+				//searchProgram(tokenizedPath, my_argv);
 				printf("%s>", startupSign);
 				i = 0;
 			}
@@ -144,6 +190,6 @@ int main(int argc, char *argv[], char *envp[])
 	}
 	printf("\n");
 	// writeEnvVar(startupSign);
-	checkProfile();
+	
 	return 0;
 }
